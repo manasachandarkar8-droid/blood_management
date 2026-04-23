@@ -910,4 +910,3 @@ function handleLogout() {
 const s = document.createElement('style');
 s.textContent = '@keyframes ripple{to{transform:scale(40);opacity:0}}';
 document.head.appendChild(s);
-
