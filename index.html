@@ -26,15 +26,13 @@
     <a href="#" class="nav-item" data-section="donations"><i class="fa-solid fa-heart-pulse"></i><span>Donations</span></a>
     <a href="#" class="nav-item" data-section="requests"><i class="fa-solid fa-clipboard-list"></i><span>Requests</span></a>
     <a href="#" class="nav-item" data-section="patients"><i class="fa-solid fa-user-injured"></i><span>Patients</span></a>
+    <a href="admin.html" class="nav-item"><i class="fa-solid fa-shield-halved"></i><span>Admin</span></a>
   </nav>
   <div class="sidebar-footer">
     <div class="user-info">
       <div class="user-avatar"><i class="fa-solid fa-user-shield"></i></div>
       <div>
-        <div class="user-name">Admin</div>
-        <div class="user-role">System Manager</div>
-      </div>
-    </div>
+        <div class="user-name" id="sidebar-username">Admin</div>
   </div>
 </aside>
 
@@ -55,6 +53,9 @@
         <input type="text" placeholder="Search anything..." id="global-search"/>
       </div>
       <button class="notif-btn"><i class="fa-solid fa-bell"></i><span class="badge">3</span></button>
+      <button class="btn-primary" style="padding:8px 16px;font-size:0.82rem" onclick="handleLogout()">
+        <i class="fa-solid fa-right-from-bracket"></i> Logout
+      </button>
     </div>
   </header>
 
@@ -404,4 +405,3 @@
 <script src="app.js"></script>
 </body>
 </html>
-<!-- deploy -->

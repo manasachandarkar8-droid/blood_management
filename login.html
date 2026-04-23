@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BloodLink – Login</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    /* ===== LOGIN PAGE SPECIFIC ===== */
+    body.auth-page {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: var(--bg);
+      overflow: hidden;
+    }
+
+    /* Animated background blobs */
+    .auth-bg {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .auth-bg-blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.18;
+    }
+    .auth-bg-blob.b1 {
+      width: 500px; height: 500px;
+      background: var(--red);
+      top: -150px; left: -150px;
+      animation: blobFloat 8s ease-in-out infinite;
+    }
+    .auth-bg-blob.b2 {
+      width: 400px; height: 400px;
+      background: var(--accent3);
+      bottom: -100px; right: -100px;
+      animation: blobFloat 10s ease-in-out infinite reverse;
+    }
+    .auth-bg-blob.b3 {
+      width: 300px; height: 300px;
+      background: var(--accent2);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      animation: blobFloat 12s ease-in-out infinite 2s;
+    }
+    @keyframes blobFloat {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(30px, -20px) scale(1.05); }
+      66% { transform: translate(-20px, 30px) scale(0.95); }
+    }
+
+    /* ===== AUTH CARD ===== */
+    .auth-card {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 460px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 40px 100px rgba(0,0,0,0.7);
+      padding: 44px 40px;
+      animation: authCardIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+    }
+    @keyframes authCardIn {
+      from { opacity: 0; transform: translateY(32px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0)   scale(1); }
+    }
+
+    /* Logo */
+    .auth-logo {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 32px;
+    }
+    .auth-logo-icon {
+      width: 48px; height: 48px;
+      background: linear-gradient(135deg, var(--red), var(--red-dark));
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(230,57,70,0.45);
+      animation: heartbeat 2s ease-in-out infinite;
+    }
+    .auth-logo-text {
+      font-family: var(--font-display);
+      font-size: 1.6rem;
+      color: var(--text);
+    }
+    .auth-logo-text strong { color: var(--red); }
+
+    /* Tabs */
+    .auth-tabs {
+      display: flex;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 4px;
+      margin-bottom: 28px;
+    }
+    .auth-tab {
+      flex: 1;
+      padding: 9px 0;
+      text-align: center;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all var(--transition);
+      border: none;
+      background: none;
+      font-family: var(--font-body);
+    }
+    .auth-tab.active {
+      background: linear-gradient(135deg, var(--red), var(--red-dark));
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(230,57,70,0.35);
+    }
+
+    /* Form panels */
+    .auth-panel { display: none; }
+    .auth-panel.active { display: block; animation: fadeInUp 0.35s ease both; }
+
+    .auth-heading {
+      font-family: var(--font-display);
+      font-size: 1.7rem;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .auth-subheading {
+      color: var(--text-muted);
+      font-size: 0.88rem;
+      margin-bottom: 26px;
+    }
+
+    /* Input groups */
+    .auth-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+    .auth-field label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .auth-input-wrap {
+      position: relative;
+    }
+    .auth-input-wrap .field-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-dim);
+      font-size: 0.9rem;
+      pointer-events: none;
+      transition: color var(--transition);
+    }
+    .auth-input-wrap input {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 42px;
+      color: var(--text);
+      font-size: 0.92rem;
+      outline: none;
+      font-family: var(--font-body);
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .auth-input-wrap input:focus {
+      border-color: var(--red);
+      box-shadow: 0 0 0 3px var(--red-glow);
+    }
+    .auth-input-wrap input:focus + .field-icon,
+    .auth-input-wrap input:focus ~ .field-icon {
+      color: var(--red-light);
+    }
+    .auth-input-wrap input::placeholder { color: var(--text-dim); }
+
+    /* Toggle password visibility */
+    .pwd-toggle {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-dim);
+      font-size: 0.88rem;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+      transition: color var(--transition);
+    }
+    .pwd-toggle:hover { color: var(--text-muted); }
+
+    /* Validation message */
+    .field-error {
+      font-size: 0.76rem;
+      color: var(--red-light);
+      min-height: 18px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .field-error i { font-size: 0.7rem; }
+    .field-ok {
+      font-size: 0.76rem;
+      color: var(--success);
+      min-height: 18px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Password strength bar */
+    .pwd-strength-wrap { margin-top: 6px; }
+    .pwd-strength-bar {
+      height: 4px;
+      border-radius: 999px;
+      background: var(--bg3);
+      overflow: hidden;
+      margin-bottom: 4px;
+    }
+    .pwd-strength-fill {
+      height: 100%;
+      border-radius: 999px;
+      width: 0%;
+      transition: width 0.4s ease, background 0.4s ease;
+    }
+    .pwd-strength-label {
+      font-size: 0.74rem;
+      color: var(--text-dim);
+    }
+
+    /* Remember / Forgot row */
+    .auth-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 22px;
+      margin-top: -4px;
+    }
+    .auth-check {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      user-select: none;
+    }
+    .auth-check input[type="checkbox"] {
+      accent-color: var(--red);
+      width: 15px; height: 15px;
+    }
+    .auth-forgot {
+      font-size: 0.84rem;
+      color: var(--red-light);
+      cursor: pointer;
+      transition: color var(--transition);
+      background: none;
+      border: none;
+      font-family: var(--font-body);
+    }
+    .auth-forgot:hover { color: var(--red); }
+
+    /* Submit btn */
+    .auth-submit {
+      width: 100%;
+      background: linear-gradient(135deg, var(--red), var(--red-dark));
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      padding: 13px 0;
+      font-size: 0.95rem;
+      font-weight: 600;
+      font-family: var(--font-body);
+      cursor: pointer;
+      transition: all var(--transition);
+      box-shadow: 0 4px 18px rgba(230,57,70,0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .auth-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(230,57,70,0.5); }
+    .auth-submit:active { transform: translateY(0); }
+    .auth-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    /* Divider */
+    .auth-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      color: var(--text-dim);
+      font-size: 0.8rem;
+    }
+    .auth-divider::before, .auth-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* Switch hint */
+    .auth-switch {
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .auth-switch button {
+      color: var(--red-light);
+      font-weight: 600;
+      background: none;
+      border: none;
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: color var(--transition);
+      padding: 0;
+    }
+    .auth-switch button:hover { color: var(--red); }
+
+    /* Terms checkbox */
+    .auth-terms {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 18px;
+      cursor: pointer;
+    }
+    .auth-terms input[type="checkbox"] {
+      accent-color: var(--red);
+      width: 15px; height: 15px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .auth-terms span { color: var(--red-light); }
+
+    /* Toast (same as main app but repositioned for auth) */
+    .auth-toast {
+      position: fixed;
+      bottom: 28px; right: 28px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 14px 22px;
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      font-weight: 500;
+      z-index: 2000;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: var(--shadow);
+      max-width: 340px;
+    }
+    .auth-toast.show { transform: translateY(0); opacity: 1; }
+    .auth-toast.success { border-left: 3px solid var(--success); }
+    .auth-toast.error   { border-left: 3px solid var(--red); }
+    .auth-toast.info    { border-left: 3px solid var(--info); }
+
+    /* Responsive */
+    @media (max-width: 520px) {
+      .auth-card { padding: 32px 22px; margin: 16px; }
+      .auth-heading { font-size: 1.4rem; }
+    }
+  </style>
+</head>
+<body class="auth-page">
+
+<!-- Animated background -->
+<div class="auth-bg">
+  <div class="auth-bg-blob b1"></div>
+  <div class="auth-bg-blob b2"></div>
+  <div class="auth-bg-blob b3"></div>
+</div>
+
+<!-- AUTH CARD -->
+<div class="auth-card">
+
+  <!-- Logo -->
+  <div class="auth-logo">
+    <div class="auth-logo-icon"><i class="fa-solid fa-droplet"></i></div>
+    <span class="auth-logo-text">Blood<strong>Link</strong></span>
+  </div>
+
+  <!-- Tabs -->
+  <div class="auth-tabs">
+    <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">Sign In</button>
+    <button class="auth-tab" id="tab-register" onclick="switchTab('register')">Create Account</button>
+  </div>
+
+  <!-- ===== LOGIN PANEL ===== -->
+  <div class="auth-panel active" id="panel-login">
+    <h2 class="auth-heading">Welcome back</h2>
+    <p class="auth-subheading">Sign in to your BloodLink admin account</p>
+
+    <div class="auth-field">
+      <label>Username or Email</label>
+      <div class="auth-input-wrap">
+        <input type="text" id="login-username" placeholder="admin or admin@bloodlink.com" autocomplete="username"
+               oninput="validateLoginField('login-username', 'err-login-username')"/>
+        <i class="fa-solid fa-user field-icon"></i>
+      </div>
+      <div class="field-error" id="err-login-username"></div>
+    </div>
+
+    <div class="auth-field">
+      <label>Password</label>
+      <div class="auth-input-wrap">
+        <input type="password" id="login-password" placeholder="Enter your password" autocomplete="current-password"
+               oninput="validateLoginField('login-password', 'err-login-password')"/>
+        <i class="fa-solid fa-lock field-icon"></i>
+        <button class="pwd-toggle" type="button" onclick="togglePwd('login-password', this)" tabindex="-1">
+          <i class="fa-solid fa-eye"></i>
+        </button>
+      </div>
+      <div class="field-error" id="err-login-password"></div>
+    </div>
+
+    <div class="auth-row">
+      <label class="auth-check">
+        <input type="checkbox" id="remember-me"/> Remember me
+      </label>
+      <button class="auth-forgot" onclick="showForgot()">Forgot password?</button>
+    </div>
+
+    <button class="auth-submit" id="login-btn" onclick="handleLogin()">
+      <i class="fa-solid fa-right-to-bracket"></i> Sign In
+    </button>
+
+    <div class="auth-switch">
+      Don't have an account? <button onclick="switchTab('register')">Create one</button>
+    </div>
+  </div>
+
+  <!-- ===== REGISTER PANEL ===== -->
+  <div class="auth-panel" id="panel-register">
+    <h2 class="auth-heading">Create account</h2>
+    <p class="auth-subheading">Set up your BloodLink admin credentials</p>
+
+    <div class="auth-field">
+      <label>Full Name</label>
+      <div class="auth-input-wrap">
+        <input type="text" id="reg-name" placeholder="John Doe" autocomplete="name"
+               oninput="liveValidate('reg-name')"/>
+        <i class="fa-solid fa-id-card field-icon"></i>
+      </div>
+      <div class="field-error" id="err-reg-name"></div>
+    </div>
+
+    <div class="auth-field">
+      <label>Email Address</label>
+      <div class="auth-input-wrap">
+        <input type="email" id="reg-email" placeholder="you@example.com" autocomplete="email"
+               oninput="liveValidate('reg-email')"/>
+        <i class="fa-solid fa-envelope field-icon"></i>
+      </div>
+      <div class="field-error" id="err-reg-email"></div>
+    </div>
+
+    <div class="auth-field">
+      <label>Username</label>
+      <div class="auth-input-wrap">
+        <input type="text" id="reg-username" placeholder="e.g. admin_user" autocomplete="username"
+               oninput="liveValidate('reg-username')"/>
+        <i class="fa-solid fa-at field-icon"></i>
+      </div>
+      <div class="field-error" id="err-reg-username"></div>
+    </div>
+
+    <div class="auth-field">
+      <label>Password</label>
+      <div class="auth-input-wrap">
+        <input type="password" id="reg-password" placeholder="Min 8 chars, upper, lower, number, symbol" autocomplete="new-password"
+               oninput="liveValidate('reg-password'); updateStrength()"/>
+        <i class="fa-solid fa-lock field-icon"></i>
+        <button class="pwd-toggle" type="button" onclick="togglePwd('reg-password', this)" tabindex="-1">
+          <i class="fa-solid fa-eye"></i>
+        </button>
+      </div>
+      <div class="pwd-strength-wrap">
+        <div class="pwd-strength-bar"><div class="pwd-strength-fill" id="strength-fill"></div></div>
+        <div class="pwd-strength-label" id="strength-label">Enter a password</div>
+      </div>
+      <div class="field-error" id="err-reg-password"></div>
+    </div>
+
+    <div class="auth-field">
+      <label>Confirm Password</label>
+      <div class="auth-input-wrap">
+        <input type="password" id="reg-confirm" placeholder="Re-enter your password" autocomplete="new-password"
+               oninput="liveValidate('reg-confirm')"/>
+        <i class="fa-solid fa-shield-halved field-icon"></i>
+        <button class="pwd-toggle" type="button" onclick="togglePwd('reg-confirm', this)" tabindex="-1">
+          <i class="fa-solid fa-eye"></i>
+        </button>
+      </div>
+      <div class="field-error" id="err-reg-confirm"></div>
+    </div>
+
+    <label class="auth-terms">
+      <input type="checkbox" id="reg-terms"/>
+      I agree to the <span>Terms of Service</span> and <span>Privacy Policy</span>
+    </label>
+
+    <button class="auth-submit" id="register-btn" onclick="handleRegister()">
+      <i class="fa-solid fa-user-plus"></i> Create Account
+    </button>
+
+    <div class="auth-switch">
+      Already have an account? <button onclick="switchTab('login')">Sign in</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="auth-toast" id="auth-toast"></div>
+
+<script>
+  // ===========================
+  //   REGEX VALIDATORS
+  // ===========================
+  const REGEX = {
+    // Full name: at least 2 words, letters only (including accented), min 2 chars each
+    fullName:   /^[A-Za-zÀ-ÖØ-öø-ÿ]{2,}(?:\s[A-Za-zÀ-ÖØ-öø-ÿ]{2,})+$/,
+    // Email: standard RFC-5322 simplified
+    email:      /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/,
+    // Username: 3-20 chars, letters/numbers/underscores/hyphens, must start with a letter
+    username:   /^[a-zA-Z][a-zA-Z0-9_\-]{2,19}$/,
+    // Password: min 8 chars, at least one uppercase, one lowercase, one digit, one special char
+    password:   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?`~]).{8,}$/,
+    // Login identifier: username or email
+    loginId:    /^(?:[a-zA-Z][a-zA-Z0-9_\-]{2,19}|[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})$/
+  };
+
+  const MESSAGES = {
+    'reg-name':     { empty: 'Full name is required', invalid: 'Enter at least first and last name (letters only)' },
+    'reg-email':    { empty: 'Email is required', invalid: 'Enter a valid email address (e.g. you@example.com)' },
+    'reg-username': { empty: 'Username is required', invalid: 'Username must start with a letter, 3–20 chars (letters, numbers, _ or -)' },
+    'reg-password': { empty: 'Password is required', invalid: 'Min 8 chars with uppercase, lowercase, number & special character' },
+    'reg-confirm':  { empty: 'Please confirm your password', invalid: 'Passwords do not match' },
+    'login-username': { empty: 'Username or email is required', invalid: 'Enter a valid username or email address' },
+    'login-password': { empty: 'Password is required', invalid: 'Password must be at least 8 characters' }
+  };
+
+  // ===========================
+  //   IN-MEMORY USER STORE
+  // ===========================
+  // Seed one default admin
+  const users = [
+    { username: 'admin', email: 'admin@bloodlink.com', name: 'System Admin', password: 'Admin@1234' }
+  ];
+
+  // ===========================
+  //   TAB SWITCHING
+  // ===========================
+  function switchTab(tab) {
+    document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+    document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+    document.getElementById('panel-login').classList.toggle('active', tab === 'login');
+    document.getElementById('panel-register').classList.toggle('active', tab === 'register');
+    clearAllErrors();
+  }
+
+  // ===========================
+  //   LIVE VALIDATION
+  // ===========================
+  function liveValidate(fieldId) {
+    const input = document.getElementById(fieldId);
+    const errEl = document.getElementById('err-' + fieldId);
+    const val   = input.value.trim();
+    const msgs  = MESSAGES[fieldId];
+
+    if (!val) {
+      setError(errEl, msgs.empty);
+      input.style.borderColor = 'var(--red)';
+      return false;
+    }
+
+    let valid = false;
+    if (fieldId === 'reg-name')     valid = REGEX.fullName.test(val);
+    if (fieldId === 'reg-email')    valid = REGEX.email.test(val);
+    if (fieldId === 'reg-username') valid = REGEX.username.test(val);
+    if (fieldId === 'reg-password') valid = REGEX.password.test(val);
+    if (fieldId === 'reg-confirm') {
+      const pwd = document.getElementById('reg-password').value;
+      valid = val === pwd && val.length > 0;
+    }
+
+    if (!valid) {
+      setError(errEl, '<i class="fa-solid fa-circle-exclamation"></i> ' + msgs.invalid);
+      input.style.borderColor = 'var(--red)';
+      return false;
+    } else {
+      setOk(errEl, '<i class="fa-solid fa-circle-check"></i> Looks good!');
+      input.style.borderColor = 'var(--success)';
+      return true;
+    }
+  }
+
+  function validateLoginField(fieldId, errId) {
+    const input = document.getElementById(fieldId);
+    const errEl = document.getElementById(errId);
+    const val   = input.value.trim();
+    const msgs  = MESSAGES[fieldId];
+
+    if (!val) {
+      setError(errEl, msgs.empty);
+      input.style.borderColor = 'var(--red)';
+      return false;
+    }
+
+    let valid = false;
+    if (fieldId === 'login-username') valid = REGEX.loginId.test(val);
+    if (fieldId === 'login-password') valid = val.length >= 8;
+
+    if (!valid) {
+      setError(errEl, '<i class="fa-solid fa-circle-exclamation"></i> ' + msgs.invalid);
+      input.style.borderColor = 'var(--red)';
+      return false;
+    } else {
+      errEl.innerHTML = '';
+      input.style.borderColor = 'var(--border)';
+      return true;
+    }
+  }
+
+  function setError(el, msg) { el.className = 'field-error'; el.innerHTML = msg; }
+  function setOk(el, msg)    { el.className = 'field-ok';    el.innerHTML = msg; }
+
+  function clearAllErrors() {
+    document.querySelectorAll('.field-error, .field-ok').forEach(el => { el.innerHTML = ''; el.className = 'field-error'; });
+    document.querySelectorAll('.auth-input-wrap input').forEach(i => i.style.borderColor = '');
+  }
+
+  // ===========================
+  //   PASSWORD STRENGTH
+  // ===========================
+  function updateStrength() {
+    const val   = document.getElementById('reg-password').value;
+    const fill  = document.getElementById('strength-fill');
+    const label = document.getElementById('strength-label');
+
+    let score = 0;
+    if (val.length >= 8)                          score++;
+    if (/[A-Z]/.test(val))                        score++;
+    if (/[a-z]/.test(val))                        score++;
+    if (/\d/.test(val))                           score++;
+    if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?`~]/.test(val)) score++;
+
+    const levels = [
+      { pct: '0%',   color: 'var(--red)',     text: 'Enter a password' },
+      { pct: '20%',  color: 'var(--red)',     text: 'Very weak' },
+      { pct: '40%',  color: 'var(--warning)', text: 'Weak' },
+      { pct: '60%',  color: 'var(--warning)', text: 'Fair' },
+      { pct: '80%',  color: 'var(--success)', text: 'Strong' },
+      { pct: '100%', color: 'var(--success)', text: '✅ Very strong' }
+    ];
+
+    const lvl = val.length === 0 ? levels[0] : levels[Math.min(score, 5)];
+    fill.style.width      = lvl.pct;
+    fill.style.background = lvl.color;
+    label.textContent     = lvl.text;
+    label.style.color     = val.length ? lvl.color : 'var(--text-dim)';
+  }
+
+  // ===========================
+  //   PASSWORD TOGGLE
+  // ===========================
+  function togglePwd(inputId, btn) {
+    const input = document.getElementById(inputId);
+    const icon  = btn.querySelector('i');
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.className = 'fa-solid fa-eye-slash';
+    } else {
+      input.type = 'password';
+      icon.className = 'fa-solid fa-eye';
+    }
+  }
+
+  // ===========================
+  //   HANDLE LOGIN
+  // ===========================
+  function handleLogin() {
+    const identInput = document.getElementById('login-username');
+    const pwdInput   = document.getElementById('login-password');
+    const ident      = identInput.value.trim();
+    const pwd        = pwdInput.value;
+
+    // Validate fields
+    let valid = true;
+    const identErr = document.getElementById('err-login-username');
+    const pwdErr   = document.getElementById('err-login-password');
+
+    if (!ident) {
+      setError(identErr, MESSAGES['login-username'].empty);
+      identInput.style.borderColor = 'var(--red)';
+      valid = false;
+    } else if (!REGEX.loginId.test(ident)) {
+      setError(identErr, '<i class="fa-solid fa-circle-exclamation"></i> ' + MESSAGES['login-username'].invalid);
+      identInput.style.borderColor = 'var(--red)';
+      valid = false;
+    } else {
+      identErr.innerHTML = '';
+      identInput.style.borderColor = 'var(--border)';
+    }
+
+    if (!pwd) {
+      setError(pwdErr, MESSAGES['login-password'].empty);
+      pwdInput.style.borderColor = 'var(--red)';
+      valid = false;
+    } else if (pwd.length < 8) {
+      setError(pwdErr, '<i class="fa-solid fa-circle-exclamation"></i> ' + MESSAGES['login-password'].invalid);
+      pwdInput.style.borderColor = 'var(--red)';
+      valid = false;
+    } else {
+      pwdErr.innerHTML = '';
+      pwdInput.style.borderColor = 'var(--border)';
+    }
+
+    if (!valid) return;
+
+    // Check credentials
+    const user = users.find(u =>
+      (u.username === ident || u.email === ident) && u.password === pwd
+    );
+
+    const btn = document.getElementById('login-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Signing in…';
+
+    setTimeout(() => {
+      if (user) {
+        // Store session
+        sessionStorage.setItem('bl_user', JSON.stringify({ username: user.username, name: user.name }));
+        showAuthToast('✅ Welcome back, ' + user.name + '!', 'success');
+        setTimeout(() => { window.location.href = 'index.html'; }, 900);
+      } else {
+        showAuthToast('❌ Invalid credentials. Please try again.', 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Sign In';
+        pwdInput.style.borderColor = 'var(--red)';
+        setError(pwdErr, '<i class="fa-solid fa-circle-exclamation"></i> Incorrect username/email or password');
+      }
+    }, 700);
+  }
+
+  // ===========================
+  //   HANDLE REGISTER
+  // ===========================
+  function handleRegister() {
+    const fields  = ['reg-name', 'reg-email', 'reg-username', 'reg-password', 'reg-confirm'];
+    let allValid  = true;
+
+    fields.forEach(f => {
+      if (!liveValidate(f)) allValid = false;
+    });
+
+    if (!allValid) {
+      showAuthToast('❌ Please fix the errors above.', 'error');
+      return;
+    }
+
+    if (!document.getElementById('reg-terms').checked) {
+      showAuthToast('❌ Please accept the Terms of Service.', 'error');
+      return;
+    }
+
+    const username = document.getElementById('reg-username').value.trim();
+    const email    = document.getElementById('reg-email').value.trim();
+
+    // Check uniqueness
+    if (users.find(u => u.username === username)) {
+      setError(document.getElementById('err-reg-username'), '<i class="fa-solid fa-circle-exclamation"></i> Username already taken');
+      document.getElementById('reg-username').style.borderColor = 'var(--red)';
+      return;
+    }
+    if (users.find(u => u.email === email)) {
+      setError(document.getElementById('err-reg-email'), '<i class="fa-solid fa-circle-exclamation"></i> Email already registered');
+      document.getElementById('reg-email').style.borderColor = 'var(--red)';
+      return;
+    }
+
+    const btn = document.getElementById('register-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating account…';
+
+    const newUser = {
+      name:     document.getElementById('reg-name').value.trim(),
+      email,
+      username,
+      password: document.getElementById('reg-password').value
+    };
+
+    setTimeout(() => {
+      users.push(newUser);
+      sessionStorage.setItem('bl_user', JSON.stringify({ username: newUser.username, name: newUser.name }));
+      showAuthToast('✅ Account created! Redirecting…', 'success');
+      setTimeout(() => { window.location.href = 'index.html'; }, 900);
+    }, 700);
+  }
+
+  // ===========================
+  //   FORGOT PASSWORD
+  // ===========================
+  function showForgot() {
+    const ident = document.getElementById('login-username').value.trim();
+    if (!ident) {
+      showAuthToast('ℹ️ Enter your username or email first.', 'info');
+      document.getElementById('login-username').focus();
+      return;
+    }
+    const user = users.find(u => u.username === ident || u.email === ident);
+    if (user) {
+      showAuthToast(`ℹ️ Password reset link sent to ${user.email}.`, 'info');
+    } else {
+      showAuthToast('❌ No account found with that identifier.', 'error');
+    }
+  }
+
+  // ===========================
+  //   TOAST
+  // ===========================
+  function showAuthToast(message, type = 'success') {
+    const toast = document.getElementById('auth-toast');
+    toast.textContent = message;
+    toast.className = `auth-toast show ${type}`;
+    setTimeout(() => { toast.className = 'auth-toast'; }, 3400);
+  }
+
+  // ===========================
+  //   ENTER KEY SUPPORT
+  // ===========================
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const loginActive = document.getElementById('panel-login').classList.contains('active');
+      if (loginActive) handleLogin();
+      else handleRegister();
+    }
+  });
+</script>
+</body>
+</html>

@@ -21,6 +21,9 @@ const pageTitle = document.getElementById('page-title');
 
 navItems.forEach(item => {
   item.addEventListener('click', (e) => {
+    // If this nav item has no data-section (e.g. the Admin link to admin.html),
+    // do NOT intercept — let the browser navigate normally.
+    if (!item.dataset.section) return;
     e.preventDefault();
     const sectionId = item.dataset.section;
     switchSection(sectionId);
@@ -30,6 +33,8 @@ navItems.forEach(item => {
 });
 
 function switchSection(sectionId) {
+  // Guard: if sectionId is undefined or not a valid string, default to dashboard
+  if (!sectionId || typeof sectionId !== 'string') sectionId = 'dashboard';
   navItems.forEach(n => n.classList.remove('active'));
   sections.forEach(s => s.classList.remove('active'));
 
@@ -51,6 +56,11 @@ function switchSection(sectionId) {
   pageTitle.textContent = titleMap[sectionId] || sectionId;
 
   if (sectionId === 'dashboard') updateDashboard();
+
+  // Update URL hash so browser history and bfcache restoration work
+  if (history.replaceState) {
+    history.replaceState(null, '', sectionId === 'dashboard' ? location.pathname : '#' + sectionId);
+  }
 }
 
 // ===== SIDEBAR TOGGLE =====
@@ -848,7 +858,32 @@ function seedDemoData() {
 //   INIT
 // ===========================
 document.addEventListener('DOMContentLoaded', () => {
+  // Greet logged-in user
+  const session = sessionStorage.getItem('bl_user');
+  const nameEl = document.getElementById('sidebar-username');
+  if (session && nameEl) {
+    const u = JSON.parse(session);
+    nameEl.textContent = u.name || u.username;
+  }
+
   seedDemoData();
+
+  // ── Hash-based routing: support links like index.html#donors ──────
+  // This ensures that navigating back from admin.html always shows
+  // the correct section instead of a blank page.
+  const validSections = ['dashboard','donors','bloodbanks','bloodstock','donations','requests','patients'];
+  const hash = location.hash.replace('#', '');
+  const initialSection = validSections.includes(hash) ? hash : 'dashboard';
+  switchSection(initialSection);
+
+  // Handle bfcache page restore (browser back/forward) — re-activate
+  // the correct section so the page is never blank after navigation.
+  window.addEventListener('pageshow', function(e) {
+    const h = location.hash.replace('#', '');
+    const sec = validSections.includes(h) ? h : 'dashboard';
+    switchSection(sec);
+  });
+
   // Add ripple effect to buttons
   document.querySelectorAll('.btn-primary, .btn-secondary').forEach(btn => {
     btn.addEventListener('click', function(e) {
@@ -861,6 +896,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 });
+
+// ===========================
+//   LOGOUT
+// ===========================
+function handleLogout() {
+  sessionStorage.removeItem('bl_user');
+  showToast('Logged out successfully.', 'info');
+  setTimeout(() => { window.location.href = 'login.html'; }, 900);
+}
 
 // Ripple CSS inject
 const s = document.createElement('style');
