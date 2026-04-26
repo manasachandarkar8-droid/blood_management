@@ -209,6 +209,7 @@
     <a href="index.html#bloodstock" class="nav-item"><i class="fa-solid fa-vials"></i><span>Blood Stock</span></a>
     <a href="index.html#donations" class="nav-item"><i class="fa-solid fa-heart-pulse"></i><span>Donations</span></a>
     <a href="index.html#requests" class="nav-item"><i class="fa-solid fa-clipboard-list"></i><span>Requests</span></a>
+    <a href="index.html#emergency" class="nav-item"><i class="fa-solid fa-clock-rotate-left"></i><span>Emergency Timer</span></a>
     <a href="index.html#patients" class="nav-item"><i class="fa-solid fa-user-injured"></i><span>Patients</span></a>
     <a href="admin.html" class="nav-item active"><i class="fa-solid fa-shield-halved"></i><span>Admin</span></a>
   </nav>
@@ -293,6 +294,13 @@
           <div class="stat-label">Suspended</div>
         </div>
       </div>
+      <div class="stat-card c6" style="--c6-bg:rgba(230,57,70,0.12)">
+        <div class="stat-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+        <div class="stat-info">
+          <div class="stat-num" id="stat-em-critical">0</div>
+          <div class="stat-label">Emergency Timers Active</div>
+        </div>
+      </div>
     </div>
 
     <!-- Sub-navigation -->
@@ -305,6 +313,9 @@
       </button>
       <button class="admin-subnav-btn" onclick="switchAdminTab('settings')" id="atab-settings">
         <i class="fa-solid fa-sliders"></i> System Settings
+      </button>
+      <button class="admin-subnav-btn" onclick="switchAdminTab('emergency')" id="atab-emergency">
+        <i class="fa-solid fa-clock-rotate-left"></i> Emergency Timers
       </button>
     </div>
 
@@ -537,6 +548,97 @@
       </div>
     </div><!-- /asub-settings -->
 
+    <!-- ===== EMERGENCY TIMERS ===== -->
+    <div class="admin-subsection" id="asub-emergency">
+      <div class="section-header">
+        <div>
+          <h2><i class="fa-solid fa-clock-rotate-left" style="color:var(--red);margin-right:8px"></i>Emergency Blood Timers</h2>
+          <p>Monitor all active emergency blood requests and their urgency levels across the system</p>
+        </div>
+        <a href="index.html#emergency" class="btn-primary" style="text-decoration:none">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Manage Timers
+        </a>
+      </div>
+
+      <!-- Urgency Summary -->
+      <div class="admin-stats-grid" style="margin-bottom:24px">
+        <div class="stat-card c1"><div class="stat-icon"><i class="fa-solid fa-triangle-exclamation"></i></div><div class="stat-info"><div class="stat-num" id="adm-em-critical">—</div><div class="stat-label">Critical / Expired</div></div></div>
+        <div class="stat-card c2"><div class="stat-icon"><i class="fa-solid fa-fire"></i></div><div class="stat-info"><div class="stat-num" id="adm-em-urgent">—</div><div class="stat-label">Urgent (&lt;4h)</div></div></div>
+        <div class="stat-card c3"><div class="stat-icon"><i class="fa-solid fa-clock"></i></div><div class="stat-info"><div class="stat-num" id="adm-em-moderate">—</div><div class="stat-label">Moderate (&lt;12h)</div></div></div>
+        <div class="stat-card c5"><div class="stat-icon"><i class="fa-solid fa-circle-check"></i></div><div class="stat-info"><div class="stat-num" id="adm-em-stable">—</div><div class="stat-label">Stable</div></div></div>
+      </div>
+
+      <!-- Emergency Settings Card -->
+      <div class="settings-grid">
+        <div class="settings-card">
+          <h4><i class="fa-solid fa-clock-rotate-left"></i> Emergency Timer Settings</h4>
+          <div class="setting-input">
+            <div class="setting-label">Critical Threshold (hours)<span>Auto-escalate below this time</span></div>
+            <input type="number" id="set-em-critical" value="1" min="0.25" max="6" step="0.25"/>
+          </div>
+          <div class="setting-input">
+            <div class="setting-label">Urgent Threshold (hours)<span>Mark as Urgent below this</span></div>
+            <input type="number" id="set-em-urgent" value="4" min="1" max="24"/>
+          </div>
+          <div class="setting-input">
+            <div class="setting-label">Moderate Threshold (hours)<span>Mark as Moderate below this</span></div>
+            <input type="number" id="set-em-moderate" value="12" min="4" max="48"/>
+          </div>
+          <div class="setting-row">
+            <div class="setting-label">Timer Refresh Interval<span>Auto-refresh emergency timers</span></div>
+            <label class="toggle-switch"><input type="checkbox" id="set-em-autorefresh" checked/><span class="toggle-slider"></span></label>
+          </div>
+          <div class="setting-row">
+            <div class="setting-label">Sound Alert on Critical<span>Play alert when request goes critical</span></div>
+            <label class="toggle-switch"><input type="checkbox" id="set-em-sound"/><span class="toggle-slider"></span></label>
+          </div>
+        </div>
+        <div class="settings-card">
+          <h4><i class="fa-solid fa-bell"></i> Emergency Notification Rules</h4>
+          <div class="setting-row">
+            <div class="setting-label">Notify on New Emergency Request<span>Alert admin when timer is created</span></div>
+            <label class="toggle-switch"><input type="checkbox" id="set-em-notif-new" checked/><span class="toggle-slider"></span></label>
+          </div>
+          <div class="setting-row">
+            <div class="setting-label">Notify on Escalation<span>Alert when urgency level increases</span></div>
+            <label class="toggle-switch"><input type="checkbox" id="set-em-notif-esc" checked/><span class="toggle-slider"></span></label>
+          </div>
+          <div class="setting-row">
+            <div class="setting-label">Notify on Expiry<span>Alert when timer deadline passes</span></div>
+            <label class="toggle-switch"><input type="checkbox" id="set-em-notif-exp" checked/><span class="toggle-slider"></span></label>
+          </div>
+          <div class="setting-row">
+            <div class="setting-label">Show in Dashboard Critical Panel<span>Display emergency timers on dashboard</span></div>
+            <label class="toggle-switch"><input type="checkbox" id="set-em-dashboard" checked/><span class="toggle-slider"></span></label>
+          </div>
+          <div class="setting-input">
+            <div class="setting-label">Max Active Timers<span>Alert admin if exceeded</span></div>
+            <input type="number" id="set-em-max" value="20" min="5" max="200"/>
+          </div>
+        </div>
+      </div>
+
+      <div style="text-align:right;margin-top:8px">
+        <button class="btn-primary" onclick="saveEmergencySettings()"><i class="fa-solid fa-floppy-disk"></i> Save Emergency Settings</button>
+      </div>
+
+      <!-- Info notice -->
+      <div style="margin-top:20px;background:rgba(84,160,255,0.08);border:1px solid rgba(84,160,255,0.2);border-radius:var(--radius);padding:18px 22px;display:flex;gap:14px;align-items:flex-start">
+        <i class="fa-solid fa-circle-info" style="color:var(--info);margin-top:2px;flex-shrink:0"></i>
+        <div>
+          <div style="font-weight:600;color:var(--text);margin-bottom:4px">How Emergency Timers Work</div>
+          <div style="font-size:0.85rem;color:var(--text-muted);line-height:1.6">
+            Emergency requests automatically escalate based on time remaining to deadline.
+            <strong style="color:var(--red-light)">Critical</strong> (&lt;1h or expired) •
+            <strong style="color:var(--warning)">Urgent</strong> (&lt;4h) •
+            <strong style="color:var(--info)">Moderate</strong> (&lt;12h) •
+            <strong style="color:var(--success)">Stable</strong> (&gt;12h).
+            Critical and Urgent requests appear in the Dashboard Critical panel automatically.
+          </div>
+        </div>
+      </div>
+    </div><!-- /asub-emergency -->
+
   </section>
 </main>
 
@@ -762,10 +864,11 @@ function showToast(message, type) {
 
 // ── Sub-tab switch ───────────────────────────────────────────────────
 function switchAdminTab(tab) {
-  ['users', 'logs', 'settings'].forEach(function (t) {
+  ['users', 'logs', 'settings', 'emergency'].forEach(function (t) {
     document.getElementById('atab-' + t).classList.toggle('active', t === tab);
     document.getElementById('asub-' + t).classList.toggle('active', t === tab);
   });
+  if (tab === 'emergency') updateAdminEmergencyStats();
 }
 
 // ── Stats ────────────────────────────────────────────────────────────
@@ -776,6 +879,15 @@ function updateAdminStats() {
   document.getElementById('stat-admins').textContent       = users.filter(function (u) { return u.role === 'Admin' || u.role === 'Superadmin'; }).length;
   document.getElementById('stat-logs').textContent         = adminState.logs.length;
   document.getElementById('stat-suspended').textContent    = users.filter(function (u) { return u.status === 'suspended'; }).length;
+  // Emergency stat — read from sessionStorage if available
+  try {
+    var emData = sessionStorage.getItem('bl_em_stats');
+    if (emData) {
+      var stats = JSON.parse(emData);
+      var total = (stats.critical || 0) + (stats.urgent || 0);
+      document.getElementById('stat-em-critical').textContent = total;
+    }
+  } catch(e) {}
 }
 
 function updateNotifBadge() {
@@ -1102,6 +1214,51 @@ function confirmDanger(action) {
   };
   document.getElementById('danger-modal-msg').textContent = msgs[action] || 'Are you sure?';
   openModal('danger-modal');
+}
+
+// ── Emergency Timer Admin Functions ──────────────────────────────────
+function updateAdminEmergencyStats() {
+  // These stats are based on localStorage data — since admin is separate page,
+  // we show placeholder data with note to visit main dashboard for live data.
+  // In a real system, this would query a backend API.
+  var els = ['adm-em-critical','adm-em-urgent','adm-em-moderate','adm-em-stable'];
+  // Try to read counts from sessionStorage (set by app.js when navigating)
+  try {
+    var emData = sessionStorage.getItem('bl_em_stats');
+    if (emData) {
+      var stats = JSON.parse(emData);
+      var el = function(id) { return document.getElementById(id); };
+      if (el('adm-em-critical')) el('adm-em-critical').textContent = stats.critical || 0;
+      if (el('adm-em-urgent'))   el('adm-em-urgent').textContent   = stats.urgent   || 0;
+      if (el('adm-em-moderate')) el('adm-em-moderate').textContent = stats.moderate || 0;
+      if (el('adm-em-stable'))   el('adm-em-stable').textContent   = stats.stable   || 0;
+      if (document.getElementById('stat-em-critical')) document.getElementById('stat-em-critical').textContent = (stats.critical || 0) + (stats.urgent || 0);
+      return;
+    }
+  } catch(e) {}
+  // No data available — show dashes
+  els.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = '—';
+  });
+}
+
+function saveEmergencySettings() {
+  var settings = {
+    criticalHours: document.getElementById('set-em-critical').value,
+    urgentHours: document.getElementById('set-em-urgent').value,
+    moderateHours: document.getElementById('set-em-moderate').value,
+    autoRefresh: document.getElementById('set-em-autorefresh').checked,
+    sound: document.getElementById('set-em-sound').checked,
+    notifNew: document.getElementById('set-em-notif-new').checked,
+    notifEsc: document.getElementById('set-em-notif-esc').checked,
+    notifExp: document.getElementById('set-em-notif-exp').checked,
+    showDashboard: document.getElementById('set-em-dashboard').checked,
+    maxTimers: document.getElementById('set-em-max').value
+  };
+  try { sessionStorage.setItem('bl_em_settings', JSON.stringify(settings)); } catch(e) {}
+  addLog('admin', 'Emergency Timer settings saved', 'info');
+  showToast('Emergency Timer settings saved!');
 }
 
 // ── Logout ────────────────────────────────────────────────────────────

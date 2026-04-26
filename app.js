@@ -11,7 +11,8 @@ const state = {
   donations: [],
   requests: [],
   patients: [],
-  activity: []
+  activity: [],
+  emergencies: []
 };
 
 // ===== NAVIGATION =====
@@ -51,6 +52,7 @@ function switchSection(sectionId) {
     bloodstock: 'Blood Stock',
     donations: 'Donations',
     requests: 'Blood Requests',
+    emergency: '⏰ Emergency Blood Timer',
     patients: 'Patients'
   };
   pageTitle.textContent = titleMap[sectionId] || sectionId;
@@ -185,11 +187,13 @@ function renderActivity() {
 function renderCritical() {
   const list = document.getElementById('critical-list');
   const criticals = state.requests.filter(r => r.priority === 'Critical' && r.status === 'Pending');
-  if (criticals.length === 0) {
+  const criticalEm = state.emergencies.filter(em => em.status === 'Active' && getEmergencyUrgency(em.deadline).level === 'critical');
+
+  if (criticals.length === 0 && criticalEm.length === 0) {
     list.innerHTML = '<li class="empty-state"><i class="fa-solid fa-check-circle"></i> No critical requests</li>';
     return;
   }
-  list.innerHTML = criticals.map(r => `
+  let html = criticals.map(r => `
     <li class="critical-item">
       <div>
         <div style="font-weight:600;color:var(--text);font-size:0.85rem">${r.id}</div>
@@ -198,6 +202,18 @@ function renderCritical() {
       <span class="crit-badge">CRITICAL</span>
     </li>
   `).join('');
+  html += criticalEm.map(em => {
+    const urg = getEmergencyUrgency(em.deadline);
+    return `<li class="critical-item">
+      <div>
+        <div style="font-weight:600;color:var(--text);font-size:0.85rem">⏰ ${em.id}</div>
+        <div style="font-size:0.78rem;color:var(--text-muted)">Patient ${em.patient} • ${em.bg} • ${em.hospital}</div>
+        <div style="font-size:0.76rem;color:var(--red-light);font-weight:600">${urg.timeLeft}</div>
+      </div>
+      <span class="crit-badge" style="background:rgba(230,57,70,0.2);animation:blinkBadge 1.2s infinite">TIMER</span>
+    </li>`;
+  }).join('');
+  list.innerHTML = html;
 }
 
 function formatTime(date) {
@@ -747,7 +763,8 @@ document.getElementById('confirm-delete-btn').addEventListener('click', () => {
     stock: { arr: 'stock', render: renderStock, label: 'Stock' },
     donation: { arr: 'donations', render: renderDonations, label: 'Donation' },
     request: { arr: 'requests', render: renderRequests, label: 'Request' },
-    patient: { arr: 'patients', render: renderPatients, label: 'Patient' }
+    patient: { arr: 'patients', render: renderPatients, label: 'Patient' },
+    emergency: { arr: 'emergencies', render: renderEmergencies, label: 'Emergency Request' }
   };
   const m = map[type];
   if (!m) return;
@@ -850,8 +867,231 @@ function seedDemoData() {
     { message: 'New donor <span>Ananya Roy</span> registered', time: new Date(Date.now() - 300000) },
     { message: 'Stock <span>ST003</span> nearing expiry', time: new Date(Date.now() - 600000) }
   ];
-  renderDonors(); renderBanks(); renderStock(); renderDonations(); renderRequests(); renderPatients();
+
+  // Emergency timer demo data
+  const now = new Date();
+  state.emergencies = [
+    { _idx: 20, id: 'EMR001', patient: 'P001', bg: 'A+', qty: 3, hospital: 'City General Hospital, ICU', deadline: new Date(now.getTime() + 1.5 * 3600000).toISOString().slice(0,16), contact: '+91 98765 43210', status: 'Active', notes: 'Post-surgery hemorrhage, urgent', createdAt: now.toISOString() },
+    { _idx: 21, id: 'EMR002', patient: 'P002', bg: 'O-', qty: 2, hospital: 'Apollo Hospital, Surgery Block', deadline: new Date(now.getTime() + 6 * 3600000).toISOString().slice(0,16), contact: '+91 91234 56789', status: 'Active', notes: 'Scheduled surgery, reserve required', createdAt: now.toISOString() },
+    { _idx: 22, id: 'EMR003', patient: 'P003', bg: 'B+', qty: 1, hospital: 'NIMHANS Blood Centre', deadline: new Date(now.getTime() + 20 * 3600000).toISOString().slice(0,16), contact: '+91 80 2234 5678', status: 'Active', notes: '', createdAt: now.toISOString() }
+  ];
+
+  renderDonors(); renderBanks(); renderStock(); renderDonations(); renderRequests(); renderPatients(); renderEmergencies(); updateEmergencyStats();
   updateDashboard();
+}
+
+// ===========================
+//   EMERGENCY BLOOD TIMER
+// ===========================
+
+// Urgency levels based on time remaining
+function getEmergencyUrgency(deadlineStr) {
+  const now = new Date();
+  const deadline = new Date(deadlineStr);
+  const diffMs = deadline - now;
+  const diffHours = diffMs / (1000 * 60 * 60);
+
+  if (diffMs <= 0) return { level: 'critical', label: 'EXPIRED', color: 'var(--red-light)', bg: 'rgba(230,57,70,0.2)', timeLeft: 'Expired' };
+  if (diffHours < 1) return { level: 'critical', label: 'CRITICAL', color: 'var(--red-light)', bg: 'rgba(230,57,70,0.2)', timeLeft: formatTimeLeft(diffMs) };
+  if (diffHours < 4) return { level: 'urgent', label: 'URGENT', color: 'var(--warning)', bg: 'rgba(255,159,67,0.2)', timeLeft: formatTimeLeft(diffMs) };
+  if (diffHours < 12) return { level: 'moderate', label: 'MODERATE', color: 'var(--info)', bg: 'rgba(84,160,255,0.2)', timeLeft: formatTimeLeft(diffMs) };
+  return { level: 'stable', label: 'STABLE', color: 'var(--success)', bg: 'rgba(46,204,113,0.2)', timeLeft: formatTimeLeft(diffMs) };
+}
+
+function formatTimeLeft(diffMs) {
+  if (diffMs <= 0) return 'Expired';
+  const totalMin = Math.floor(diffMs / 60000);
+  const hours = Math.floor(totalMin / 60);
+  const mins = totalMin % 60;
+  const days = Math.floor(hours / 24);
+  const remHours = hours % 24;
+  if (days > 0) return `${days}d ${remHours}h ${mins}m`;
+  if (hours > 0) return `${hours}h ${mins}m`;
+  return `${mins}m`;
+}
+
+function saveEmergency(e) {
+  e.preventDefault();
+  const editId = document.getElementById('emergency-edit-id').value;
+  const deadlineDate = document.getElementById('em-deadline-date').value;
+  const deadlineTime = document.getElementById('em-deadline-time').value;
+  const deadline = deadlineDate + 'T' + deadlineTime;
+
+  const em = {
+    id: document.getElementById('em-id').value.trim(),
+    patient: document.getElementById('em-patient').value.trim(),
+    bg: document.getElementById('em-bg').value,
+    qty: document.getElementById('em-qty').value,
+    hospital: document.getElementById('em-hospital').value.trim(),
+    deadline: deadline,
+    contact: document.getElementById('em-contact').value.trim(),
+    status: document.getElementById('em-status').value,
+    notes: document.getElementById('em-notes').value.trim(),
+    createdAt: new Date().toISOString()
+  };
+
+  if (editId !== '') {
+    const idx = state.emergencies.findIndex(r => r._idx == editId);
+    if (idx !== -1) {
+      em._idx = state.emergencies[idx]._idx;
+      em.createdAt = state.emergencies[idx].createdAt;
+      state.emergencies[idx] = em;
+      logActivity(`Emergency request <span>${em.id}</span> updated`);
+      showToast('Emergency request updated!');
+    }
+  } else {
+    if (state.emergencies.find(r => r.id === em.id)) {
+      showToast('Emergency ID already exists!', 'error'); return;
+    }
+    em._idx = Date.now();
+    state.emergencies.push(em);
+    const urgency = getEmergencyUrgency(em.deadline);
+    logActivity(`🚨 Emergency blood request <span>${em.id}</span> created — ${urgency.label}`);
+    showToast(urgency.level === 'critical' ? '🚨 CRITICAL emergency request added!' : '⏰ Emergency request added!');
+  }
+
+  closeModal('emergency-modal');
+  renderEmergencies();
+  updateEmergencyStats();
+  updateDashboard();
+  resetEmergencyForm();
+}
+
+function renderEmergencies(list) {
+  const tbody = document.getElementById('emergency-tbody');
+  const data = list || state.emergencies;
+  if (data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="10" class="no-data"><i class="fa-solid fa-clock-rotate-left"></i> No emergency requests yet. Add one!</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = data.map(em => {
+    const urgency = getEmergencyUrgency(em.deadline);
+    const deadlineFormatted = new Date(em.deadline).toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    const isFulfilledOrCancelled = em.status === 'Fulfilled' || em.status === 'Cancelled';
+    const statusClass = em.status === 'Active' ? 'status-pending' : em.status === 'Fulfilled' ? 'status-fulfilled' : 'status-rejected';
+
+    const timerDisplay = isFulfilledOrCancelled
+      ? `<span style="color:var(--text-dim);font-size:0.82rem">—</span>`
+      : `<span class="em-timer-badge" data-idx="${em._idx}" style="
+          background:${urgency.bg};
+          color:${urgency.color};
+          display:inline-flex;align-items:center;gap:6px;
+          padding:4px 12px;border-radius:999px;font-size:0.82rem;font-weight:700;
+          ${urgency.level === 'critical' ? 'animation:blinkBadge 1.2s infinite;' : ''}
+        "><i class="fa-solid fa-clock" style="font-size:0.72rem"></i>${urgency.timeLeft}</span>`;
+
+    const urgencyBadge = `<span style="
+        background:${urgency.bg};color:${urgency.color};
+        padding:3px 10px;border-radius:999px;font-size:0.76rem;font-weight:700;
+        ${urgency.level === 'critical' && !isFulfilledOrCancelled ? 'animation:blinkBadge 1.2s infinite;' : ''}
+      ">${urgency.label}</span>`;
+
+    return `<tr>
+      <td>${em.id}</td>
+      <td>${em.patient}</td>
+      <td><span class="bg-badge">${em.bg}</span></td>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis" title="${em.hospital}">${em.hospital}</td>
+      <td><strong style="color:var(--text)">${em.qty}</strong> units</td>
+      <td style="color:var(--text-muted);font-size:0.82rem;white-space:nowrap">${deadlineFormatted}</td>
+      <td>${timerDisplay}</td>
+      <td>${urgencyBadge}</td>
+      <td><span class="status-badge ${statusClass}">${em.status}</span></td>
+      <td>
+        <div class="action-btns">
+          <button class="btn-icon btn-icon-edit" onclick="editEmergency('${em._idx}')" title="Edit"><i class="fa-solid fa-pen"></i></button>
+          <button class="btn-icon btn-icon-del" onclick="confirmDelete('emergency','${em._idx}')" title="Delete"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function updateEmergencyStats() {
+  const active = state.emergencies.filter(e => e.status === 'Active');
+  let critical = 0, urgent = 0, moderate = 0, stable = 0;
+  active.forEach(em => {
+    const u = getEmergencyUrgency(em.deadline);
+    if (u.level === 'critical') critical++;
+    else if (u.level === 'urgent') urgent++;
+    else if (u.level === 'moderate') moderate++;
+    else stable++;
+  });
+  const el = (id) => document.getElementById(id);
+  if (el('em-stat-critical')) el('em-stat-critical').textContent = critical;
+  if (el('em-stat-urgent')) el('em-stat-urgent').textContent = urgent;
+  if (el('em-stat-moderate')) el('em-stat-moderate').textContent = moderate;
+  if (el('em-stat-stable')) el('em-stat-stable').textContent = stable;
+  // Save to sessionStorage for admin page
+  try { sessionStorage.setItem('bl_em_stats', JSON.stringify({critical, urgent, moderate, stable})); } catch(e) {}
+}
+
+// Live timer update every 30 seconds
+setInterval(() => {
+  const currentSection = document.querySelector('.section.active');
+  if (currentSection && currentSection.id === 'section-emergency') {
+    renderEmergencies();
+    updateEmergencyStats();
+  }
+  // Also update critical list on dashboard
+  if (currentSection && currentSection.id === 'section-dashboard') {
+    renderCritical();
+  }
+}, 30000);
+
+function editEmergency(idx) {
+  const em = state.emergencies.find(x => x._idx == idx);
+  if (!em) return;
+  document.getElementById('emergency-modal-title').textContent = 'Edit Emergency Request';
+  document.getElementById('emergency-edit-id').value = idx;
+  document.getElementById('em-id').value = em.id;
+  document.getElementById('em-patient').value = em.patient;
+  document.getElementById('em-bg').value = em.bg;
+  document.getElementById('em-qty').value = em.qty;
+  document.getElementById('em-hospital').value = em.hospital;
+  if (em.deadline) {
+    const [datePart, timePart] = em.deadline.split('T');
+    document.getElementById('em-deadline-date').value = datePart || '';
+    document.getElementById('em-deadline-time').value = timePart ? timePart.slice(0,5) : '';
+  }
+  document.getElementById('em-contact').value = em.contact;
+  document.getElementById('em-status').value = em.status;
+  document.getElementById('em-notes').value = em.notes || '';
+  openModal('emergency-modal');
+}
+
+function resetEmergencyForm() {
+  document.getElementById('emergency-modal-title').textContent = 'New Emergency Blood Request';
+  document.getElementById('emergency-edit-id').value = '';
+  ['em-id','em-patient','em-qty','em-hospital','em-deadline-date','em-deadline-time','em-contact','em-notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('em-bg').value = '';
+  document.getElementById('em-status').value = '';
+}
+
+function filterEmergencyTable(q) {
+  const rows = document.querySelectorAll('#emergency-table tbody tr');
+  rows.forEach(row => {
+    if (row.querySelector('.no-data')) return;
+    row.style.display = row.textContent.toLowerCase().includes(q.toLowerCase()) ? '' : 'none';
+  });
+}
+
+function filterEmergencyByUrgency(level) {
+  const statusFilter = document.getElementById('em-status-filter').value;
+  applyEmergencyFilters(document.querySelector('#section-emergency .filter-input').value, level, statusFilter);
+}
+
+function filterEmergencyByStatus(status) {
+  const urgencyFilter = document.getElementById('em-urgency-filter').value;
+  applyEmergencyFilters(document.querySelector('#section-emergency .filter-input').value, urgencyFilter, status);
+}
+
+function applyEmergencyFilters(q, urgencyLevel, status) {
+  let list = state.emergencies;
+  if (q) list = list.filter(em => JSON.stringify(em).toLowerCase().includes(q.toLowerCase()));
+  if (urgencyLevel) list = list.filter(em => getEmergencyUrgency(em.deadline).level === urgencyLevel);
+  if (status) list = list.filter(em => em.status === status);
+  renderEmergencies(list);
 }
 
 // ===========================
@@ -871,7 +1111,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Hash-based routing: support links like index.html#donors ──────
   // This ensures that navigating back from admin.html always shows
   // the correct section instead of a blank page.
-  const validSections = ['dashboard','donors','bloodbanks','bloodstock','donations','requests','patients'];
+  const validSections = ['dashboard','donors','bloodbanks','bloodstock','donations','requests','emergency','patients'];
   const hash = location.hash.replace('#', '');
   const initialSection = validSections.includes(hash) ? hash : 'dashboard';
   switchSection(initialSection);
